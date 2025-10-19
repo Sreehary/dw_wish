@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light the Path</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind --><script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'diwali-dark': '#1a1a2e', /* Deep night color */
+                        'diwali-gold': '#FFD700',
+                        'diwali-orange': '#FF7F50',
+                        'diwali-flame': '#FFA500',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    keyframes: {
+                        flame_breathe: {
+                            '0%, 100%': { opacity: '1', transform: 'translateX(-50%) scaleY(1)', 'box-shadow': '0 0 10px rgba(255, 165, 0, 0.8), 0 0 20px rgba(255, 140, 0, 0.6)' },
+                            '25%': { opacity: '0.98', transform: 'translateX(-50%) scaleY(1.02)', 'box-shadow': '0 0 11px rgba(255, 170, 0, 0.8), 0 0 22px rgba(255, 150, 0, 0.65)' },
+                            '50%': { opacity: '0.9', transform: 'translateX(-50%) scaleY(0.98)', 'box-shadow': '0 0 12px rgba(255, 180, 0, 0.9), 0 0 25px rgba(255, 165, 0, 0.7)' },
+                            '75%': { opacity: '0.95', transform: 'translateX(-50%) scaleY(1.01)', 'box-shadow': '0 0 8px rgba(255, 140, 0, 0.7), 0 0 15px rgba(255, 120, 0, 0.5)' },
+                        },
+                        pulse_slow: {
+                            '0%, 100%': { transform: 'scale(1)', 'box-shadow': '0 0 40px rgba(255, 215, 0, 0.5)' },
+                            '50%': { transform: 'scale(1.02)', 'box-shadow': '0 0 50px rgba(255, 215, 0, 0.8)' },
+                        },
+                        burst: {
+                            '0%': { transform: 'scale(0)', opacity: '1' },
+                            '100%': { transform: 'scale(1.5)', opacity: '0', 'transform-origin': 'center center' },
+                        }
+                    },
+                    animation: {
+                        flame_breathe: 'flame_breathe 2s infinite alternate ease-in-out',
+                        pulse_slow: 'pulse_slow 4s infinite ease-in-out',
+                        burst: 'burst 1.2s ease-out forwards',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base styling for the interactive scene */
+        .scene {
+            background-color: #1a1a2e; /* Deep dark blue */
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Diya containers (click targets) */
+        .diya-container {
+            position: absolute;
+            width: 50px; /* Slightly wider to match image */
+            height: 50px; /* Adjust height for perspective */
+            opacity: 1;
+            z-index: 10; 
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex; /* For centering wick/flame */
+            justify-content: center;
+            align-items: flex-end; /* Position wick at top of base */
+        }
+        
+        .diya-container:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Diya base (the clay pot) is always visible) */
+        .diya-base {
+            position: relative; /* For absolute positioning of decorative lines */
+            width: 45px; /* Matches the wider shape */
+            height: 20px; /* Taller */
+            bottom: 0;
+            background: linear-gradient(to bottom, #d66a2a, #8f481c); /* Top to bottom gradient for clay */
+            border-radius: 50% 50% 10px 10px / 100% 100% 5px 5px; /* Curved top, flatter bottom */
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.6), /* Stronger shadow for depth */
+                inset 0 2px 4px rgba(255, 255, 255, 0.2); /* Inner highlight */
+            border: 1px solid #5a3118; /* Darker border */
+        }
+        
+        /* Decorative lines for the diya base */
+        .diya-base::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 1px;
+            background-color: #5a3118; /* Dark brown for lines */
+            left: 10%;
+            top: 40%; /* Position of the first line */
+            border-radius: 50%;
+            box-shadow: 
+                0 5px 0 #5a3118, /* Second line below first */
+                0 10px 0 #5a3118; /* Third line below second */
+            transform: scaleY(0.5); /* Make lines thinner */
+        }
+
+        /* Wick element (The part that lights up) */
+        .diya-wick {
+            position: absolute;
+            bottom: 80%; /* Position wick higher above the base */
+            width: 4px;
+            height: 10px; /* Taller wick */
+            border-radius: 2px;
+            background-color: #5a3118; /* Dark brown for unlit wick */
+            z-index: 1; /* Ensure wick is above base but below flame */
+            transition: all 0.5s ease-in-out;
+        }
+        
+        /* Lit state: flame applied to the wick element */
+        .diya-lit .diya-wick {
+            background-color: transparent; /* Wick disappears into flame */
+            width: 15px; /* Wider flame base */
+            height: 25px; /* Taller flame */
+            bottom: 100%; /* Position flame higher */
+            border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%; /* Flame shape */
+            
+            /* The actual flame colors */
+            background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, #FFD700 10%, #FFA500 30%, #FF7F50 60%, transparent 100%);
+            
+            /* Apply the new breathing animation and the glow effect */
+            animation: flame_breathe 2s infinite alternate ease-in-out;
+            box-shadow: 
+                0 0 8px #FFD700, /* Gold inner glow */
+                0 0 20px #FF7F50, /* Orange middle glow */
+                0 0 40px #FFA500; /* Amber outer glow */
+            left: 50%;
+        }
+
+        /* FIREWORK STYLES */
+        .firework-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Rocket trail/tracer element */
+        .rocket-tracer {
+            position: absolute;
+            bottom: 5vh; /* Starts above the diyas */
+            width: 3px;
+            height: 10px;
+            background-color: white;
+            box-shadow: 0 0 5px white, 0 0 10px #FF4500;
+            border-radius: 2px;
+            z-index: 6;
+        }
+
+        .spark {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            opacity: 0;
+            animation: burst 1.2s ease-out forwards;
+        }
+        
+        /* Message box to guide the user (Initial state) */
+        #interactive-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FFD700;
+        }
+        
+        /* Message box final state */
+        .final-message-card {
+            background-color: #1a1a2e;
+            background-opacity: 0.95;
+            border-width: 4px;
+            border-color: #FFD700;
+            animation: pulse_slow 4s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="scene text-white font-sans">
+
+    <!-- Diya Decorations Container (bottom of screen) --><div id="diyas-container">
+        <!-- Diyas will be generated here by JavaScript --></div>
+    
+    <!-- Firework Container (for dynamic fireworks) --><div id="fireworks-container" class="firework-container"></div>
+
+    <!-- Central Instruction/Message Card --><div id="interactive-message" class="rounded-xl p-6 text-center shadow-lg transition duration-500 w-full max-w-sm md:max-w-md">
+        <h2 class="text-3xl font-bold text-diwali-gold mb-4">A Celebration is Waiting...</h2>
+        <p class="text-xl font-semibold text-diwali-orange">
+            **Light every lamp!** Click on the unlit diyas below to light them all one by one.
+        </p>
+    </div>
+
+    
+    <!-- JavaScript for Dynamic Diyas, Lighting, and Fireworks --><script>
+        const diyasContainer = document.getElementById('diyas-container');
+        const fireworksContainer = document.getElementById('fireworks-container');
+        const numDiyas = 25; // Total number of diyas
+        let litDiyasCount = 0; // Counter for lit diyas
+        let continuousFireworkInterval = null;
+        const messageBox = document.getElementById('interactive-message');
+        const fireworkColors = ['#FFD700', '#FF4500', '#00FFFF', '#FF00FF', '#7FFF00', '#FFFFFF'];
+        
+        // The HTML content for the final message
+        const finalMessageText = `
+            <h1 class="text-4xl md:text-6xl font-bold text-diwali-gold mb-4">Happy Diwali, Kavuu!! ✨</h1>
+            <p class="text-gray-200 text-xl md:text-2xl leading-relaxed italic mb-6">
+                My dearest, I know you're missing the familiar sparkle and the sounds of home right now. But please remember this: <strong>The light you carry within you shines brighter than any diya.</strong>
+            </p>
+            <p class="text-gray-100 text-xl md:text-2xl leading-relaxed">
+                This is just a small token to light up your evening. May your path always be lit with joy, prosperity, and success.
+            </p>
+            <p class="text-diwali-gold text-2xl md:text-3xl font-bold mt-8">
+                Sending all my love ❤️
+            </p>
+        `;
+
+        // --- Diya Creation and Placement ---
+
+        function createDiya(x, y, size) {
+            const diyaDiv = document.createElement('div');
+            diyaDiv.className = 'diya-container'; 
+            diyaDiv.style.left = `${x}%`;
+            diyaDiv.style.bottom = `${y}%`;
+            diyaDiv.style.transform = `scale(${size}) translateZ(0)`;
+
+            diyaDiv.dataset.centerX = x; 
+
+            diyaDiv.innerHTML = `
+                <div class="diya-base"></div>
+                <div class="diya-wick"></div>
+            `;
+            
+            diyaDiv.addEventListener('click', handleDiyaClick);
+            diyasContainer.appendChild(diyaDiv);
+        }
+
+        function placeDiyas() {
+            diyasContainer.innerHTML = ''; 
+            const spacing = 100 / numDiyas; 
+            const baseBottom = 5; 
+
+            for (let i = 0; i < numDiyas; i++) {
+                const x = (i * spacing) + (spacing / 2); 
+                const y = baseBottom + (Math.random() * 2); 
+                const size = 0.8 + Math.random() * 0.4;
+                createDiya(x, y, size);
+            }
+        }
+        
+        // --- Firework Logic ---
+        
+        const getRandomColor = () => fireworkColors[Math.floor(Math.random() * fireworkColors.length)];
+
+        function launchFirework(startXPercent) {
+            // 1. Define the Burst Location
+            const burstYVh = Math.random() * 55 + 10; // 10vh to 65vh from the top
+            const burstXVw = startXPercent; 
+            
+            // 2. Create the Rocket Tracer
+            const rocket = document.createElement('div');
+            rocket.className = 'rocket-tracer';
+            rocket.style.left = `${burstXVw}vw`;
+            
+            fireworksContainer.appendChild(rocket);
+
+            // 3. Animate the Rocket Launch
+            const ascentDistanceVh = 95 - burstYVh;
+            const launchKeyframes = [
+                { transform: 'translateY(0)', opacity: 1 },
+                { transform: `translateY(-${ascentDistanceVh}vh)`, opacity: 0.8 }
+            ];
+
+            const launchTiming = {
+                duration: 700 + Math.random() * 300, 
+                easing: 'ease-in',
+                fill: 'forwards'
+            };
+
+            const launchAnimation = rocket.animate(launchKeyframes, launchTiming);
+
+            // 4. Burst when the rocket animation finishes
+            launchAnimation.onfinish = () => {
+                fireworksContainer.removeChild(rocket);
+                createBurst(burstXVw, burstYVh);
+            };
+        }
+        
+        function createBurst(burstXVw, burstYVh) {
+            const numSparks = 20;
+            const mainColor = getRandomColor();
+            const burstDiv = document.createElement('div');
+            fireworksContainer.appendChild(burstDiv);
+            
+            for (let i = 0; i < numSparks; i++) {
+                const spark = document.createElement('div');
+                spark.className = 'spark';
+                
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = Math.random() * 50 + 30; 
+                
+                spark.style.left = `${burstXVw}vw`;
+                spark.style.top = `${burstYVh}vh`;
+                
+                spark.style.backgroundColor = mainColor;
+                spark.style.boxShadow = `0 0 15px ${mainColor}`;
+
+                const burstKeyframes = [
+                    { transform: `translate(0, 0)`, opacity: 1, offset: 0 },
+                    { transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`, opacity: 0, offset: 1 }
+                ];
+
+                const timing = {
+                    duration: 1200,
+                    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    fill: 'forwards'
+                };
+                
+                spark.animate(burstKeyframes, timing);
+                burstDiv.appendChild(spark);
+            }
+
+            setTimeout(() => {
+                fireworksContainer.removeChild(burstDiv);
+            }, 1500);
+        }
+
+        // --- Continuous Firework Loop ---
+
+        function startContinuousFireworks() {
+            if (continuousFireworkInterval) return;
+
+            // Frequency increased by 1.5x (750ms / 1.5 = 500ms)
+            continuousFireworkInterval = setInterval(() => {
+                // Launch from a random X position (10% to 90% wide)
+                const randomX = Math.random() * 80 + 10;
+                launchFirework(randomX);
+            }, 500); 
+        }
+
+        // --- Completion & Event Handlers ---
+
+        function showFinalMessage() {
+            // Set display back to 'block' to override the 'display: none' set on the first click.
+            messageBox.style.display = 'block'; 
+
+            // 1. Add final card styling and content
+            messageBox.classList.remove('opacity-0', 'p-6', 'max-w-sm', 'md:max-w-md');
+            messageBox.classList.add('p-8', 'md:p-12', 'w-full', 'max-w-xl', 'md:max-w-3xl', 'final-message-card');
+            messageBox.innerHTML = finalMessageText;
+            
+            // 2. Center the final message by ensuring z-index is high
+            messageBox.style.zIndex = 30; 
+            
+            // 3. Start continuous fireworks
+            startContinuousFireworks();
+        }
+
+        function handleDiyaClick(e) {
+            const diya = e.currentTarget;
+            
+            if (!diya.classList.contains('diya-lit')) {
+                // 1. Light the Diya
+                diya.classList.add('diya-lit');
+                diya.style.cursor = 'default';
+                litDiyasCount++;
+                
+                // 2. Hide instruction message on first click
+                if (litDiyasCount === 1) {
+                    messageBox.classList.add('opacity-0');
+                    setTimeout(() => {
+                        // Ensure display:none is used to fully remove it from flow
+                        messageBox.style.display = 'none'; 
+                    }, 500);
+                }
+
+                // 3. Launch single firework
+                const startXPercent = parseFloat(diya.dataset.centerX);
+                launchFirework(startXPercent);
+
+                // 4. Check for completion
+                if (litDiyasCount === numDiyas) {
+                    // Stop the DIYA containers from being interactive
+                    diyasContainer.style.pointerEvents = 'none';
+                    // Show the final, heartfelt message!
+                    showFinalMessage();
+                }
+            }
+        }
+
+        // --- Initialization ---
+
+        window.onload = placeDiyas;
+    </script>
+</body>
+</html>
