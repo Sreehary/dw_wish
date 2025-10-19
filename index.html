@@ -205,7 +205,7 @@
     <!-- JavaScript for Dynamic Diyas, Lighting, and Fireworks --><script>
         const diyasContainer = document.getElementById('diyas-container');
         const fireworksContainer = document.getElementById('fireworks-container');
-        const numDiyas = 25; // Total number of diyas
+        const numDiyas = 10; // Total number of diyas (REDUCED TO 10)
         let litDiyasCount = 0; // Counter for lit diyas
         let continuousFireworkInterval = null;
         const messageBox = document.getElementById('interactive-message');
@@ -264,7 +264,8 @@
 
         function launchFirework(startXPercent) {
             // 1. Define the Burst Location
-            const burstYVh = Math.random() * 55 + 10; // 10vh to 65vh from the top
+            // Range changed to 10vh (highest) to 45vh (lowest) from the top
+            const burstYVh = Math.random() * 35 + 10; 
             const burstXVw = startXPercent; 
             
             // 2. Create the Rocket Tracer
